@@ -1,4 +1,5 @@
 import mysql.connector
+import time
 from nameko.extensions import DependencyProvider
 
 class DatabaseWrapper:
@@ -22,12 +23,22 @@ class DatabaseWrapper:
 
 class Database(DependencyProvider):
     def setup(self):
-        self.connection = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="",  # ganti sesuai konfigurasi Anda
-            database="soa_project_2025"
-        )
+        retries = 5
+        for i in range(retries):
+            try:
+                self.connection = mysql.connector.connect(
+                    host="mysql",       # sesuai nama service docker-compose
+                    user="root",
+                    password="root",
+                    database="soa_project_2025"
+                )
+                print("✅ Berhasil konek ke database!")
+                break
+            except mysql.connector.Error as e:
+                print(f"❌ Gagal koneksi DB: {e}, percobaan ke-{i+1}")
+                time.sleep(3)
+        else:
+            raise Exception("Tidak bisa konek ke database setelah beberapa percobaan.")
 
     def get_dependency(self, worker_ctx):
         return DatabaseWrapper(self.connection)
